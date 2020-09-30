@@ -14,7 +14,7 @@ class ImageRotatePlanar : public ImageRotate<CallbackFn, AllocatePolicyStdNew, A
 class RotateFilter : public GenericVideoFilter
 {
 public:
-    RotateFilter(PClip child, double angle, unsigned int backcolor, int startframe, int endframe, double endangle, int newwidth, int newheight, int shearmode, IScriptEnvironment* env);
+    RotateFilter(PClip child, double angle, unsigned int backcolor, int startframe, int endframe, double endangle, int newwidth, int newheight, double aspectratio, int shearmode, IScriptEnvironment* env);
     ~RotateFilter() { }
 
     PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
@@ -31,6 +31,7 @@ private:
     double endangle;
     int newwidth;
     int newheight;
+    double aspectratio; // pixel aspect ratio
     int shearmode;
 
     PixelRGB32 clrBack; // Background color

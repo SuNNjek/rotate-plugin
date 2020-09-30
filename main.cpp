@@ -14,9 +14,9 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
     AVS_linkage = vectors;
 
     // Add functions here like so:
-    env->AddFunction("Rotate", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i", RotateFilter::CreateRotate, 0);
-    env->AddFunction("HShear", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i", RotateFilter::CreateHShear, 0);
-    env->AddFunction("VShear", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i", RotateFilter::CreateVShear, 0);
+    env->AddFunction("Rotate", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i[aspect]f", RotateFilter::CreateRotate, 0);
+    env->AddFunction("HShear", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i[aspect]f", RotateFilter::CreateHShear, 0);
+    env->AddFunction("VShear", "c[angle]f[color]i[start]i[end]i[endangle]f[width]i[height]i[aspect]f", RotateFilter::CreateVShear, 0);
 
     // Return a description of the plugin
     // For all I know, you can't see this anywhere, but whatever :P

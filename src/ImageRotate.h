@@ -24,7 +24,7 @@ class ImageRotate
 public:
     typedef Image<AllocatorPolicy, AlignmentPolicy, PixelType> Img;
 
-    static Img AllocAndRotate(const Img &src, PixelType clrBack, double angle, ProgressAndAbortCallBack *cb = 0)
+    static Img AllocAndRotate(const Img &src, PixelType clrBack, double angle, double aspect, ProgressAndAbortCallBack *cb = 0)
     {
         if (!src.GetPtr())
             return src;
@@ -41,49 +41,57 @@ public:
         while (angle < -180.0)
             angle += 360.0;
 
-        if (angle > 45.0 && angle <= 135.0)
+        if (aspect != 1.0)
         {
-            // Angle in (45.0 .. 135.0]
-            // Rotate image by 90 degrees into temporary image,
-            // so it requires only an extra rotation angle
-            // of -45.0 .. +45.0 to complete rotation.
-            mid_image = Rotate90(src, cb);
-            angle -= 90.0;
+            if (angle > 90.0)
+            {
+                // Angle in (90.0 .. 180.0]
+                // Rotate image by 180 degrees into temporary image,
+                // so it requires only an extra rotation angle
+                // of -90.0 .. 0.0 to complete rotation.
+                mid_image = Rotate180(src, cb);
+                angle -= 180.0;
+            }
+            else if (angle < -90.0)
+            {
+                // Angle in [-180.0 .. -90.0)
+                // Rotate image by 180 degrees into temporary image,
+                // so it requires only an extra rotation angle
+                // of 0.0 .. +90.0 to complete rotation.
+                mid_image = Rotate180(src, cb);
+                angle += 180.0;
+            }
         }
-        else if (angle > 135.0 && angle <= 180.0)
+        else // aspect == 1, so we may use rotation90
         {
-            // Angle in (135.0 .. 180.0]
-            // Rotate image by 180 degrees into temporary image,
-            // so it requires only an extra rotation angle
-            // of -45.0 .. 0.0 to complete rotation.
-            mid_image = Rotate180(src, cb);
-            angle -= 180.0;
-        }
-        else if (angle >= -180.0 && angle < -135.0)
-        {
-            // Angle in (-180.0 .. -135.0]
-            // Rotate image by 180 degrees into temporary image,
-            // so it requires only an extra rotation angle
-            // of 0.0 .. +45.0 to complete rotation.
-            mid_image = Rotate180(src, cb);
-            angle += 180.0;
-        }
-        else if (angle >= -135.0 && angle < -45.0)
-        {
-            // Angle in [-135.0 .. -45.0)
-            // Rotate image by 270 degrees into temporary image,
-            // so it requires only an extra rotation angle
-            // of -45.0 .. +45.0 to complete rotation.
-            mid_image = Rotate270(src, cb);
-            angle += 90.0;
+            if (angle > 135.0)
+            {
+                mid_image = Rotate180(src, cb);
+                angle -= 180.0;
+            }
+            else if (angle > 45.0)
+            {
+                mid_image = Rotate90(src, cb);
+                angle -= 90.0;
+            }
+            else if (angle < -135.0)
+            {
+                mid_image = Rotate180(src, cb);
+                angle += 180.0;
+            }
+            else if (angle < -45.0)
+            {
+                mid_image = Rotate270(src, cb);
+                angle += 90.0;
+            }
         }
 
         // check for abort
         if (!mid_image.GetPtr())
             return mid_image;
 
-        // If we got here, angle is in (-45.0 .. +45.0]
-        Img dst(Rotate45(mid_image, clrBack, angle, src.GetPtr() != mid_image.GetPtr(), cb));
+        // If we got here, angle is in [-90.0 .. +90.0]
+        Img dst(Rotate45(mid_image, clrBack, angle, aspect, src.GetPtr() != mid_image.GetPtr(), cb));
 
         if (src.GetPtr() != mid_image.GetPtr())
         {
@@ -94,7 +102,7 @@ public:
         return dst;
     }
 
-    static Img AllocAndHShear(const Img &src, PixelType clrBack, double angle, ProgressAndAbortCallBack *cb = 0)
+    static Img AllocAndHShear(const Img &src, PixelType clrBack, double angle, double aspect, ProgressAndAbortCallBack *cb = 0)
     {
         if (!src.GetPtr())
             return src;
@@ -133,7 +141,7 @@ public:
             return mid_image;
 
         // If we got here, angle is in (-90.0 .. +90.0]
-        Img dst(HShearUpTo90 (mid_image, clrBack, angle, src.GetPtr() != mid_image.GetPtr(), cb));
+        Img dst(HShearUpTo90 (mid_image, clrBack, angle, aspect, src.GetPtr() != mid_image.GetPtr(), cb));
 
         if (src.GetPtr() != mid_image.GetPtr())
         {
@@ -144,7 +152,7 @@ public:
         return dst;
     }
 
-    static Img AllocAndVShear(const Img &src, PixelType clrBack, double angle, ProgressAndAbortCallBack *cb = 0)
+    static Img AllocAndVShear(const Img &src, PixelType clrBack, double angle, double aspect, ProgressAndAbortCallBack *cb = 0)
     {
         if (!src.GetPtr())
             return src;
@@ -183,7 +191,7 @@ public:
             return mid_image;
 
         // If we got here, angle is in (-90.0 .. +90.0]
-        Img dst(VShearUpTo90(mid_image, clrBack, angle, src.GetPtr() != mid_image.GetPtr(), cb));
+        Img dst(VShearUpTo90(mid_image, clrBack, angle, aspect, src.GetPtr() != mid_image.GetPtr(), cb));
 
         if (src.GetPtr() != mid_image.GetPtr())
         {
@@ -195,23 +203,22 @@ public:
     }
 
 private:
-    static Img Rotate45(const Img &src, PixelType clrBack, double dAngle, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
+    static Img Rotate45(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
         double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
         double dSinE = sin(dRadAngle);
         double dTan = tan(dRadAngle / 2.0);
 
         // Calc first shear (horizontal) destination image dimensions
-        int dst1_width_delta = (int(double(src.GetHeight()) * fabs(dTan) + 0.5) + 1) & 0xFFFFFFFE; // delta  must be even! - Fizick
+        int dst1_width_delta = (int(double(src.GetHeight()) * fabs(dTan) / dAspect + 0.5) + 1) & 0xFFFFFFFE; // delta  must be even! - Fizick
         Img dst1 (src.GetWidth() + dst1_width_delta, src.GetHeight()); // Fizick
         if (!dst1.GetPtr())
             return dst1;
 
         // Perform 1st shear (horizontal)
-        unsigned u;
-        for (u = 0; u < dst1.GetHeight(); u++)
+        for (unsigned u = 0; u < dst1.GetHeight(); u++)
         {
-            double dShear = dst1_width_delta / 2 + ((int)u - ((int)dst1.GetHeight() - 1) / 2.0) * dTan; // Fizick
+            double dShear = dst1_width_delta / 2 + ((int)u - ((int)dst1.GetHeight() - 1) / 2.0) * dTan / dAspect; // Fizick
             int iShear = (int)floor(dShear);
             HorizSkew(src, dst1, u, iShear, uint8_t(255 * (dShear - double(iShear)) + 1), clrBack);
 
@@ -227,8 +234,12 @@ private:
         }
 
         // Perform 2nd shear  (vertical)
-        int ivertex = dst1.GetWidth() / 2 - int((src.GetHeight() - 1) * fabs(dTan) + 0.5); // Fizick
-        int dst2_height_delta = int(2 * ivertex * fabs(dSinE) + 1) & 0xFFFFFFE; // Fizick
+        int ivertex = dst1.GetWidth() / 2 - int((src.GetHeight() - 1) * fabs(dTan) / dAspect + 0.5); // Fizick
+        int dst2_height_delta = int(2 * ivertex * fabs(dSinE) * dAspect + 1) & 0xFFFFFFE; // Fizick
+        int dst2_height_delta2 = int(dst1.GetWidth() * fabs(dSinE) * dAspect - dst1.GetHeight()) & 0xFFFFFFFE;
+        if (dst2_height_delta2 > dst2_height_delta)
+            dst2_height_delta = dst2_height_delta2; // use max
+
         Img dst2 (dst1.GetWidth(), src.GetHeight() + dst2_height_delta); // Fizick
         if (!dst2.GetPtr())
         {
@@ -236,9 +247,9 @@ private:
             return dst2;
         }
 
-        double dOffset = (dst2_height_delta + (dst2.GetWidth() - 1) * dSinE) / 2.0; // Fizick
+        double dOffset = (dst2_height_delta + (dst2.GetWidth() - 1) * dSinE * dAspect) / 2.0; // Fizick
         // Variable skew offset
-        for (u = 0; u < dst2.GetWidth(); u++, dOffset -= dSinE)
+        for (unsigned u = 0; u < dst2.GetWidth(); u++, dOffset -= (dSinE * dAspect))
         {
             int iShear = int (floor(dOffset));
             VertSkew(dst1, dst2, u, iShear, uint8_t(255 * (dOffset - double(iShear)) + 1), clrBack);
@@ -258,7 +269,7 @@ private:
         // Free result of 1st shear
         dst1.Free();
 
-        int dst3_width_delta = (int(double(src.GetHeight()) * fabs (dSinE) + double(src.GetWidth()) * cos(dRadAngle)) + 2 - dst2.GetWidth()) & 0xFFFFFFFE; // Fizick
+        int dst3_width_delta = (int(double(src.GetHeight()) * fabs(dSinE) / dAspect + double(src.GetWidth()) * cos(dRadAngle)) + 1 - dst2.GetWidth()) & 0xFFFFFFFE; // Fizick
         // Perform 3rd shear (horizontal)
         Img dst3(dst2.GetWidth() + dst3_width_delta, dst2.GetHeight()); // Fizick
         if (!dst3.GetPtr())
@@ -267,8 +278,8 @@ private:
             return dst3;
         }
 
-        dOffset = dst3_width_delta / 2 + (((int)dst3.GetHeight() - 1) / 2.0) * (-dTan); // Fizick
-        for (u = 0; u < dst3.GetHeight(); u++, dOffset += dTan)
+        dOffset = dst3_width_delta / 2 + (((int)dst3.GetHeight() - 1) / 2.0) * (-dTan) / dAspect; // Fizick
+        for (unsigned u = 0; u < dst3.GetHeight(); u++, dOffset += (dTan / dAspect))
         {
             int iShear = int(floor(dOffset));
             HorizSkew(dst2, dst3, u, iShear, uint8_t(255 * (dOffset - double (iShear)) + 1), clrBack);
@@ -379,8 +390,7 @@ private:
     {
         PixelType *p = &dst.RGBValue(0, uRow);
 
-        int i;
-        for (i = 0u; i < iOffset; i++)
+        for (int i = 0u; i < iOffset; i++)
             *p++ = clrBack;
 
         PixelType pxlOldLeft;
@@ -403,7 +413,7 @@ private:
         }
 
         // Go to rightmost point of skew
-        i = src.GetWidth() + iOffset;
+        int i = src.GetWidth() + iOffset;
 
         // If still in image bounds, put leftovers there
         if (i < (int)dst.GetWidth())
@@ -420,8 +430,7 @@ private:
     {
         PixelType *p = &dst.RGBValue(uCol, 0);
 
-        int i;
-        for (i = 0; i < iOffset; i++)
+        for (int i = 0; i < iOffset; i++)
         {
             // Fill gap above skew with background
             *p = clrBack;
@@ -431,7 +440,7 @@ private:
         PixelType pxlOldLeft;
         pxlOldLeft = clrBack;
 
-        for (i = 0; i < (int) src.GetHeight(); i++) {
+        for (int i = 0; i < (int) src.GetHeight(); i++) {
             // Loop through column pixels
             PixelType pxlSrc = src.RGBValue(uCol, i);
             // Calculate weights
@@ -448,7 +457,7 @@ private:
         }
 
         // Go to bottom point of skew
-        i = src.GetHeight() + iOffset;
+        int i = src.GetHeight() + iOffset;
 
         // If still in image bounds, put leftovers there
         if (i < (int)dst.GetHeight())
@@ -463,7 +472,7 @@ private:
         }
     }
 
-    static Img VShearUpTo90(const Img &src, PixelType clrBack, double dAngle, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
+    static Img VShearUpTo90(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
         double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
         double dSin = sin(dRadAngle);
@@ -478,7 +487,7 @@ private:
         double dTan = dSin/dCos;
 
         // Calc shear (vertical) destination image dimensions
-        int dst2_height_delta = (int(double(src.GetWidth()) * fabs(dTan) + 0.5) + 1) & 0xFFFFFFFE;
+        int dst2_height_delta = (int(double(src.GetWidth()) * fabs(dTan) * dAspect + 0.5) + 1) & 0xFFFFFFFE;
         Img dst2 (src.GetWidth(), src.GetHeight() + dst2_height_delta); // Fizick
         if (!dst2.GetPtr())
         {
@@ -486,9 +495,9 @@ private:
             return dst2;
         }
 
-        double dOffset = (dst2_height_delta + (dst2.GetWidth() - 1) * dTan) / 2.0;
+        double dOffset = (dst2_height_delta + (dst2.GetWidth() - 1) * dTan * dAspect) / 2.0;
         // Variable skew offset
-        for (int u = 0; u < (int)dst2.GetWidth(); u++, dOffset -= dTan)
+        for (int u = 0; u < (int)dst2.GetWidth(); u++, dOffset -= (dTan * dAspect))
         {
             int iShear = int(floor(dOffset));
             VertSkew(src, dst2, u, iShear, uint8_t(255 * (dOffset - double(iShear)) + 1), clrBack);
@@ -507,7 +516,7 @@ private:
         return dst2;
     }
 
-    static Img HShearUpTo90(const Img &src, PixelType clrBack, double dAngle, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
+    static Img HShearUpTo90(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
         double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
         double dSin = sin(dRadAngle);
@@ -522,7 +531,7 @@ private:
         double dTan = dSin/dCos;
 
         // Calc first shear (horizontal) destination image dimensions
-        int dst1_width_delta = (int(double(src.GetHeight()) * fabs(dTan) + 0.5) + 1) & 0xFFFFFFFE;
+        int dst1_width_delta = (int(double(src.GetHeight()) * fabs(dTan) / dAspect + 0.5) + 1) & 0xFFFFFFFE;
         Img dst1 (src.GetWidth() + dst1_width_delta, src.GetHeight());
         if (!dst1.GetPtr())
             return dst1;
@@ -530,7 +539,7 @@ private:
         // Perform 1st shear (horizontal)
         for (unsigned u = 0; u < dst1.GetHeight(); u++)
         {
-            double dShear = dst1_width_delta / 2 + ((int)u - ((int)dst1.GetHeight() - 1) / 2.0) * dTan;
+            double dShear = dst1_width_delta / 2 + ((int)u - ((int)dst1.GetHeight() - 1) / 2.0) * dTan / dAspect;
             int iShear = (int)floor(dShear);
             HorizSkew(src, dst1, u, iShear, uint8_t(255 * (dShear - double(iShear)) + 1), clrBack);
 

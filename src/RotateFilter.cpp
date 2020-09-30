@@ -8,7 +8,7 @@
 #include "RotateFilter.h"
 
 RotateFilter::RotateFilter(PClip child, double angle, unsigned int backcolor, int startframe, int endframe,
-                           double endangle, int newwidth, int newheight, int shearmode, IScriptEnvironment *env) : GenericVideoFilter(child)
+                           double endangle, int newwidth, int newheight, double aspectratio, int shearmode, IScriptEnvironment *env) : GenericVideoFilter(child)
 {
     oldwidth = vi.width;
     oldheight = vi.height;
@@ -33,9 +33,10 @@ RotateFilter::RotateFilter(PClip child, double angle, unsigned int backcolor, in
         this->newheight = vi.height;
     }
 
+    this->aspectratio = aspectratio;
 
-    if (!vi.IsRGB32() && !vi.IsYV12())
-        env->ThrowError("Rotate: image format must be RGB32 or YV12!");
+    if (!vi.IsRGB32() && !vi.IsPlanar())
+        env->ThrowError("Rotate: image format must be RGB32 or planar!");
 
     this->shearmode = shearmode;
 
@@ -62,11 +63,15 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
 {
     double angle = (endframe == startframe) ? startangle : startangle + (n-startframe)*(endangle - startangle)/(endframe - startframe);
 
+    // Request frame 'n' from the child (source) clip.
     PVideoFrame src = child->GetFrame(n, env);
 
-    // Request frame 'n' from the child (source) clip.
-    if ((n<startframe || n>endframe) && oldwidth==newwidth && oldheight==newheight) // do not rotate frames out of range
-        return src;
+    if ((n < startframe || n > endframe))
+    {
+        angle = 0; // do not rotate frames out of range
+        if (oldwidth == newwidth && oldheight == newheight)
+            return src; // nothing to do
+    }
 
     PVideoFrame dst = env->NewVideoFrame(vi);
 
@@ -95,11 +100,11 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
         // Do not use ProgressAnbAbortCallBack *cb = 0
         ImageRotateRGB32::Img dstimg;
         if (shearmode == 1)
-            dstimg = ImageRotateRGB32::AllocAndHShear(srcimg, clrBack, angle, 0);
+            dstimg = ImageRotateRGB32::AllocAndHShear(srcimg, clrBack, angle, aspectratio, 0);
         else if (shearmode == 2)
-            dstimg = ImageRotateRGB32::AllocAndVShear(srcimg, clrBack, angle, 0);
+            dstimg = ImageRotateRGB32::AllocAndVShear(srcimg, clrBack, angle, aspectratio, 0);
         else //(shearmode == 0)
-            dstimg = ImageRotateRGB32::AllocAndRotate(srcimg, clrBack, angle, 0);
+            dstimg = ImageRotateRGB32::AllocAndRotate(srcimg, clrBack, angle, aspectratio, 0);
 
         srcimg.Free();
 
@@ -133,17 +138,18 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
         else // if (wdif < 0 && hdif < 0)
         {
             fillInt(reinterpret_cast<unsigned int *>(dstp), dst_width / 4, dst_pitch, -hhdif, backcolor);
-            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffsetdst), woffset / 4, dst_pitch, dst_height, backcolor);
-            env->BitBlt(dstp + hoffsetdst + woffset, dst_pitch, dstimgp, dstimg.GetStride(), dstimg.GetWidth() * 4, dst_height);
-            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffsetdst + woffset + dstimg.GetWidth() * 4), woffset / 4, dst_pitch, dst_height, backcolor);
-            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffset + dstimg.GetHeight() * dst_pitch), dst_width / 4, dst_pitch, -hhdif, backcolor);
+            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffsetdst), woffset / 4, dst_pitch, dstimg.GetHeight(), backcolor);
+            env->BitBlt(dstp + hoffsetdst + woffset, dst_pitch, dstimgp, dstimg.GetStride(), dstimg.GetWidth() * 4, dstimg.GetHeight());
+            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffsetdst + woffset + dstimg.GetWidth() * 4), woffset / 4, dst_pitch, dstimg.GetHeight(), backcolor);
+            fillInt(reinterpret_cast<unsigned int *>(dstp + hoffsetdst + dstimg.GetHeight() * dst_pitch), dst_width / 4, dst_pitch, -hhdif, backcolor);
         }
 
         dstimg.Free();
     }
-    else // Planar
+    else if (vi.IsPlanar())
     {
-        for (int i = 0; i < 3; i++)
+        int planes = vi.IsY8() ? 1 : 3;
+        for (int i = 0; i < planes; i++)
         {
             int plane;
             if (i == 0) plane = PLANAR_Y;
@@ -160,6 +166,8 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
             const int src_width = src->GetRowSize(plane);
             const int src_height = src->GetHeight(plane);
 
+            double aspectSS = pow(2.0, (double) (vi.GetPlaneWidthSubsampling(plane) - vi.GetPlaneHeightSubsampling(plane))); // 2.6
+
             ImageRotatePlanar::Img srcimg (src_width, src_height);
 
             BYTE *srcimgp = reinterpret_cast<BYTE *>(srcimg.GetPtr());
@@ -172,11 +180,11 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
 
             ImageRotatePlanar::Img dstimg;
             if (shearmode==1)
-                dstimg = ImageRotatePlanar::AllocAndHShear(srcimg, color, angle, 0);
+                dstimg = ImageRotatePlanar::AllocAndHShear(srcimg, color, angle, aspectratio * aspectSS, 0);
             else if (shearmode==2)
-                dstimg = ImageRotatePlanar::AllocAndVShear(srcimg, color, angle, 0);
+                dstimg = ImageRotatePlanar::AllocAndVShear(srcimg, color, angle, aspectratio * aspectSS, 0);
             else //(shearmode == 0)
-                dstimg = ImageRotatePlanar::AllocAndRotate(srcimg, color, angle, 0);
+                dstimg = ImageRotatePlanar::AllocAndRotate(srcimg, color, angle, aspectratio * aspectSS, 0);
 
             srcimg.Free();
 
@@ -210,10 +218,10 @@ PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
             else // if (wdif < 0 && hdif < 0)
             {
                 fillByte( dstp, dst_width, dst_pitch, -hhdif, color);
-                fillByte( dstp + hoffsetdst, woffset, dst_pitch, dst_height, color);
-                env->BitBlt(dstp + hoffsetdst + woffset, dst_pitch, dstimgp, dstimg.GetStride(), dstimg.GetWidth(), dst_height);
-                fillByte(dstp + hoffsetdst + woffset + dstimg.GetWidth(), woffset, dst_pitch, dst_height, color);
-                fillByte( dstp + hoffset + dstimg.GetHeight() * dst_pitch, dst_width, dst_pitch, -hhdif, color);
+                fillByte( dstp + hoffsetdst, woffset, dst_pitch, dstimg.GetHeight(), color);
+                env->BitBlt(dstp + hoffsetdst + woffset, dst_pitch, dstimgp, dstimg.GetStride(), dstimg.GetWidth(), dstimg.GetHeight());
+                fillByte(dstp + hoffsetdst + woffset + dstimg.GetWidth(), woffset, dst_pitch, dstimg.GetHeight(), color);
+                fillByte( dstp + hoffsetdst + dstimg.GetHeight() * dst_pitch, dst_width, dst_pitch, -hhdif, color);
             }
 
             dstimg.Free();
@@ -232,9 +240,10 @@ AVSValue RotateFilter::CreateRotate(AVSValue args, void *user_data, IScriptEnvir
                             args[2].AsInt(0), // background color (integer or hex or global color constant like color_gray).
                             args[3].AsInt(0), // start frame
                             args[4].AsInt(-1), // end frame (-1 as latest)
-                            args[5].AsFloat(float(angle)), // end rotation angle in degrees.
+                            args[5].AsFloat(angle), // end rotation angle in degrees.
                             args[6].AsInt(0), // destination width. 0 - same as source
                             args[7].AsInt(0), // destination height.
+                            args[8].AsFloat(1.0), // pixel aspect ratio.
                             0, // rotaion or shear mode
                             env);
 }
@@ -250,6 +259,7 @@ AVSValue RotateFilter::CreateHShear(AVSValue args, void *user_data, IScriptEnvir
                             args[5].AsFloat(float(angle)), // end rotation angle in degrees.
                             args[6].AsInt(0), // destination width. 0 - same as source
                             args[7].AsInt(0), // destination height.
+                            args[8].AsFloat(1.0), // pixel aspect ratio.
                             1, // rotaion or shear mode
                             env);
 }
@@ -265,6 +275,7 @@ AVSValue RotateFilter::CreateVShear(AVSValue args, void *user_data, IScriptEnvir
                             args[5].AsFloat(float(angle)), // end rotation angle in degrees.
                             args[6].AsInt(0), // destination width. 0 - same as source
                             args[7].AsInt(0), // destination height.
+                            args[8].AsFloat(1.0), // pixel aspect ratio.
                             2, // rotaion or shear mode
                             env);
 }
