@@ -256,7 +256,7 @@ AVSValue RotateFilter::CreateHShear(AVSValue args, void *user_data, IScriptEnvir
                             args[2].AsInt(0), // background color (integer or hex or global color constant like color_gray).
                             args[3].AsInt(0), // start frame
                             args[4].AsInt(-1), // end frame (-1 as latest)
-                            args[5].AsFloat(float(angle)), // end rotation angle in degrees.
+                            args[5].AsFloat(angle), // end rotation angle in degrees.
                             args[6].AsInt(0), // destination width. 0 - same as source
                             args[7].AsInt(0), // destination height.
                             args[8].AsFloat(1.0), // pixel aspect ratio.
@@ -272,7 +272,7 @@ AVSValue RotateFilter::CreateVShear(AVSValue args, void *user_data, IScriptEnvir
                             args[2].AsInt(0), // background color (integer or hex or global color constant like color_gray).
                             args[3].AsInt(0), // start frame
                             args[4].AsInt(-1), // end frame (-1 as latest)
-                            args[5].AsFloat(float(angle)), // end rotation angle in degrees.
+                            args[5].AsFloat(angle), // end rotation angle in degrees.
                             args[6].AsInt(0), // destination width. 0 - same as source
                             args[7].AsInt(0), // destination height.
                             args[8].AsFloat(1.0), // pixel aspect ratio.
