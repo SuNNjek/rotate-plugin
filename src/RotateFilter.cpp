@@ -59,7 +59,7 @@ RotateFilter::RotateFilter(PClip child, double angle, unsigned int backcolor, in
     this->clrBack.val = backcolor;
 }
 
-PVideoFrame RotateFilter::GetFrame(int n, IScriptEnvironment *env)
+PVideoFrame __stdcall RotateFilter::GetFrame(int n, IScriptEnvironment *env)
 {
     double angle = (endframe == startframe) ? startangle : startangle + (n-startframe)*(endangle - startangle)/(endframe - startframe);
 

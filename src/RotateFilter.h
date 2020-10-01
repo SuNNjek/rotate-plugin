@@ -17,7 +17,7 @@ public:
     RotateFilter(PClip child, double angle, unsigned int backcolor, int startframe, int endframe, double endangle, int newwidth, int newheight, double aspectratio, int shearmode, IScriptEnvironment* env);
     ~RotateFilter() { }
 
-    PVideoFrame GetFrame(int n, IScriptEnvironment* env) override;
+    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
     static AVSValue CreateRotate(AVSValue args, void* user_data, IScriptEnvironment* env);
     static AVSValue CreateHShear(AVSValue args, void* user_data, IScriptEnvironment* env);

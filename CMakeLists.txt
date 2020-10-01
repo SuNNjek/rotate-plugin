@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 file(GLOB CODE "src/*.cpp")
 add_library(${PluginName} SHARED ${CODE} main.cpp)
 
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig)
 
 pkg_check_modules(AVISYNTH avisynth)
 if(AVISYNTH_FOUND)

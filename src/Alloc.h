@@ -5,7 +5,9 @@
 #pragma once
 
 #include <cstdlib>
-#include <gc.h>
+#if !WIN32
+    #include <gc.h>
+#endif
 
 class AllocatePolicyStdNew
 {
@@ -17,6 +19,7 @@ protected:
     ~AllocatePolicyStdNew() { } // to prohibit destruction by client
 };
 
+#if !WIN32 // Boehm GC doesn't exist on Windows appearently but it doesn't get used so it doesn't matter anyway
 class AllocatePolicyStdGC
 {
 public:
@@ -25,4 +28,4 @@ public:
 protected:
     ~AllocatePolicyStdGC() { } // to prohibit destruction by client
 };
-
+#endif

@@ -4,7 +4,12 @@
 
 #pragma once
 
-#include <math.h>
+#if WIN32
+    #define _USE_MATH_DEFINES
+    #include <cmath>
+#else
+    #include <math.h>
+#endif
 
 #include "Pixel.h"
 #include "Alloc.h"
@@ -205,7 +210,7 @@ public:
 private:
     static Img Rotate45(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
-        double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
+        double dRadAngle = dAngle * M_PI / double(180); // Angle in radians
         double dSinE = sin(dRadAngle);
         double dTan = tan(dRadAngle / 2.0);
 
@@ -474,7 +479,7 @@ private:
 
     static Img VShearUpTo90(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
-        double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
+        double dRadAngle = dAngle * M_PI / double(180); // Angle in radians
         double dSin = sin(dRadAngle);
         double dCos = cos(dRadAngle);
 
@@ -518,7 +523,7 @@ private:
 
     static Img HShearUpTo90(const Img &src, PixelType clrBack, double dAngle, double dAspect, bool bMidImage, ProgressAndAbortCallBack *cb = 0)
     {
-        double dRadAngle = dAngle * M_PIl / double(180); // Angle in radians
+        double dRadAngle = dAngle * M_PI / double(180); // Angle in radians
         double dSin = sin(dRadAngle);
         double dCos = cos(dRadAngle);
 
