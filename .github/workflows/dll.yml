@@ -9,6 +9,7 @@ on:
 
 jobs:
   build_windows_x64:
+    name: Build plugin for Windows x64
     runs-on: windows-latest
 
     steps:
@@ -24,12 +25,14 @@ jobs:
           cmake -G "NMake Makefiles" .
           nmake
 
-      - uses: actions/upload-artifact@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: rotate-x64
           path: rotate.dll
 
   build_windows_x86:
+    name: Build plugin for Windows x86
     runs-on: windows-latest
 
     steps:
@@ -45,18 +48,45 @@ jobs:
           cmake -G "NMake Makefiles" .
           nmake
 
-      - uses: actions/upload-artifact@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: rotate-x86
           path: rotate.dll
 
   release:
+    name: Create release
     runs-on: ubuntu-latest
+
+    # Only run on tag
+    # I wish there was a better way to do this but it'll do for now
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build_windows_x64, build_windows_x86]
 
     steps:
       - name: Download binaries
         uses: actions/download-artifact@v2
 
-      - name: Display structure of downloaded files
-        run: ls -R
+      - name: Create zip archive
+        run: zip -r release.zip .
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ endsWith(github.ref, 'rc') }}
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: ${{ format('rotate_{0}.zip', github.ref) }}
+          asset_content_type: application/zip
