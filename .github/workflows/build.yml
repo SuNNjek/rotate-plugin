@@ -10,13 +10,13 @@ jobs:
   build_windows:
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64, x86, ARM64]
 
     name: Build plugin for Windows
     runs-on: windows-latest
     env:
       CMAKE_GENERATOR: Visual Studio 18 2026
-      CMAKE_ARCHITECTURE: ${{ matrix.arch == 'x86' && 'Win32' || 'x64' }}
+      CMAKE_ARCHITECTURE: ${{ matrix.arch == 'x86' && 'Win32' || matrix.arch }}
       BUILD_CONFIG: Release
     defaults:
       run:
