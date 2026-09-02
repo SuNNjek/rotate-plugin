@@ -23,11 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.arch }}
-
       - name: Build Plugin
         run: |
           cmake -G "NMake Makefiles" .
