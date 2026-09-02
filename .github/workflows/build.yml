@@ -23,13 +23,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Build Plugin
-        run: |
-          cmake -A ${{ matrix.arch }} -G Ninja .
-          ninja
+      - name: List generators
+        run: cmake --help
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: rotate-${{ matrix.os }}-${{ matrix.arch }}
-          path: rotate.*
+      # - name: Build Plugin
+      #   run: |
+      #     cmake -A ${{ matrix.arch }} -G Ninja .
+      #     ninja
+
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v7
+      #   with:
+      #     name: rotate-${{ matrix.os }}-${{ matrix.arch }}
+      #     path: rotate.*
