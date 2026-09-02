@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
@@ -58,3 +60,26 @@ jobs:
         with:
           name: rotate-linux
           path: rotate.so
+
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    needs: [build_windows, build_linux]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v8
+
+      - name: Create zip archive
+        run: zip -r release.zip .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref, 'rc') }}
+          files: release.zip
