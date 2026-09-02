@@ -5,10 +5,6 @@ set(PluginName "rotate")
 project(${PluginName})
 set(CMAKE_CXX_STANDARD 17)
 
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
-ENDIF()
-
 file(GLOB CODE "src/*.cpp")
 add_library(${PluginName} SHARED ${CODE} main.cpp)
 set_target_properties(${PluginName} PROPERTIES PREFIX "")

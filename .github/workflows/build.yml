@@ -74,8 +74,8 @@ jobs:
       - name: Download binaries
         uses: actions/download-artifact@v8
 
-      - name: Create zip archive
-        run: zip -r release.zip .
+      - name: Create DLL zip archive
+        run: find . -iname '*.dll' -exec zip -r rotate-${{ github.ref_name }}.zip {} +
 
       - name: Create release
         uses: softprops/action-gh-release@v3
