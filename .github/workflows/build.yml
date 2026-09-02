@@ -1,0 +1,41 @@
+name: Build plugin
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        arch: [x64, x86]
+        exclude:
+          - os: ubuntu-latest
+            arch: x86
+
+    name: Build plugin
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Build Plugin
+        run: |
+          cmake -G "NMake Makefiles" .
+          nmake
+
+      - if: matrix.os == 'windows-latest'
+        name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: rotate-${{ matrix.arch }}
+          path: rotate.dll
