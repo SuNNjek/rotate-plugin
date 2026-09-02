@@ -10,12 +10,13 @@ jobs:
   build_windows:
     strategy:
       matrix:
-        arch: [x64, Win32]
+        arch: [x64, x86]
 
     name: Build plugin for Windows
     runs-on: windows-latest
     env:
       CMAKE_GENERATOR: Visual Studio 18 2026
+      CMAKE_ARCHITECTURE: ${{ matrix.arch == 'x86' && 'Win32' || 'x64' }}
       BUILD_CONFIG: Release
     defaults:
       run:
@@ -27,8 +28,8 @@ jobs:
 
       - name: Build plugin
         run: |
-          cmake  -G $CMAKE_GENERATOR -A ${{ matrix.arch }} .
-          cmake --build . --config $BUILD_CONFIG
+          cmake  -G "$CMAKE_GENERATOR" -A "$CMAKE_ARCHITECTURE" .
+          cmake --build . --config "$BUILD_CONFIG"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
