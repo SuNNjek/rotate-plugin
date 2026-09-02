@@ -14,24 +14,35 @@ jobs:
 
     name: Build plugin for Windows
     runs-on: windows-latest
+    env:
+      CMAKE_GENERATOR: Visual Studio 18 2026
+      BUILD_CONFIG: Release
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Build plugin
         run: |
-          cmake  -G "Visual Studio 18 2026" -A ${{ matrix.arch }} .
-          cmake --build . --config Release
+          cmake  -G $CMAKE_GENERATOR -A ${{ matrix.arch }} .
+          cmake --build . --config $BUILD_CONFIG
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: rotate-windows-${{ matrix.arch }}
-          path: rotate.dll
+          path: ${{ env.BUILD_CONFIG }}/rotate.dll
 
   build_linux:
     name: Build plugin for Linux
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
