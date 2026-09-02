@@ -10,14 +10,14 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows, ubuntu]
         arch: [x64, x86]
         exclude:
-          - os: ubuntu-latest
+          - os: ubuntu
             arch: x86
 
     name: Build plugin
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
 
     steps:
       - name: Checkout
@@ -25,12 +25,11 @@ jobs:
 
       - name: Build Plugin
         run: |
-          cmake -G Ninja .
+          cmake -A ${{ matrix.arch }} -G Ninja .
           ninja
 
-      - if: matrix.os == 'windows-latest'
-        name: Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: rotate-${{ matrix.arch }}
-          path: rotate.dll
+          name: rotate-${{ matrix.os }}-${{ matrix.arch }}
+          path: rotate.*
