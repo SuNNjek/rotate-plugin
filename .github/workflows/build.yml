@@ -10,7 +10,7 @@ jobs:
   build_windows:
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64, Win32]
 
     name: Build plugin for Windows
     runs-on: windows-latest
@@ -20,7 +20,7 @@ jobs:
 
       - name: Build plugin
         run: |
-          cmake  -G "Visual Studio 18 2026" -A${{ matrix.arch }} .
+          cmake  -G "Visual Studio 18 2026" -A ${{ matrix.arch }} .
           cmake --build . --config Release
 
       - name: Upload artifact
