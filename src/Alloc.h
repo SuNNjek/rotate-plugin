@@ -15,14 +15,3 @@ public:
 protected:
     ~AllocatePolicyStdNew() { } // to prohibit destruction by client
 };
-
-#if !WIN32 // Boehm GC doesn't exist on Windows appearently but it doesn't get used so it doesn't matter anyway
-class AllocatePolicyStdGC
-{
-public:
-    static void* allocate(size_t size) { return GC_MALLOC_ATOMIC(size); }
-    static void mfree(void *t) { }
-protected:
-    ~AllocatePolicyStdGC() { } // to prohibit destruction by client
-};
-#endif
