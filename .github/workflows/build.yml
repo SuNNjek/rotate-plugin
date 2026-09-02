@@ -65,7 +65,7 @@ jobs:
     name: Create release
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
-    needs: [build_windows, build_linux]
+    needs: build_windows
     defaults:
       run:
         shell: bash
@@ -82,4 +82,4 @@ jobs:
         with:
           draft: false
           prerelease: ${{ contains(github.ref, 'rc') }}
-          files: release.zip
+          files: rotate-${{ github.ref_name }}.zip
