@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
@@ -35,7 +35,7 @@ jobs:
 
       - if: matrix.os == 'windows-latest'
         name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: rotate-${{ matrix.arch }}
           path: rotate.dll
