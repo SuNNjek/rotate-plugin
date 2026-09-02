@@ -7,32 +7,42 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build_windows:
     strategy:
       matrix:
-        os: [windows, ubuntu]
         arch: [x64, x86]
-        exclude:
-          - os: ubuntu
-            arch: x86
 
-    name: Build plugin
-    runs-on: ${{ matrix.os }}-latest
-
+    name: Build plugin for Windows
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: List generators
-        run: cmake --help
+      - name: Build plugin
+        run: |
+          cmake  -G "Visual Studio 18 2026" -A${{ matrix.arch }} .
+          cmake --build . --config Release
 
-      # - name: Build Plugin
-      #   run: |
-      #     cmake -A ${{ matrix.arch }} -G Ninja .
-      #     ninja
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rotate-windows-${{ matrix.arch }}
+          path: rotate.dll
 
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v7
-      #   with:
-      #     name: rotate-${{ matrix.os }}-${{ matrix.arch }}
-      #     path: rotate.*
+  build_linux:
+    name: Build plugin for Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build plugin
+        run: |
+          cmake -G Ninja .
+          ninja
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rotate-linux
+          path: rotate.so
