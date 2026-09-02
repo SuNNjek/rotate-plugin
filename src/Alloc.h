@@ -5,9 +5,6 @@
 #pragma once
 
 #include <cstdlib>
-#if !WIN32
-    #include <gc.h>
-#endif
 
 class AllocatePolicyStdNew
 {
