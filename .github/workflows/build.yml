@@ -4,38 +4,82 @@ on:
   push:
     branches:
       - master
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
-  build:
+  build_windows:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        arch: [x64, x86]
-        exclude:
-          - os: ubuntu-latest
-            arch: x86
+        arch: [x64, x86, ARM64]
 
-    name: Build plugin
-    runs-on: ${{ matrix.os }}
+    name: Build plugin for Windows
+    runs-on: windows-latest
+    env:
+      CMAKE_GENERATOR: Visual Studio 18 2026
+      CMAKE_ARCHITECTURE: ${{ matrix.arch == 'x86' && 'Win32' || matrix.arch }}
+      BUILD_CONFIG: Release
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.arch }}
-
-      - name: Build Plugin
+      - name: Build plugin
         run: |
-          cmake -G "NMake Makefiles" .
-          nmake
+          cmake  -G "$CMAKE_GENERATOR" -A "$CMAKE_ARCHITECTURE" .
+          cmake --build . --config "$BUILD_CONFIG"
 
-      - if: matrix.os == 'windows-latest'
-        name: Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: rotate-${{ matrix.arch }}
-          path: rotate.dll
+          name: rotate-windows-${{ matrix.arch }}
+          path: ${{ env.BUILD_CONFIG }}/rotate.dll
+
+  build_linux:
+    name: Build plugin for Linux
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build plugin
+        run: |
+          cmake -G Ninja .
+          ninja
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rotate-linux
+          path: rotate.so
+
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    needs: [build_windows, build_linux]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v8
+
+      - name: Create zip archive
+        run: zip -r release.zip .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref, 'rc') }}
+          files: release.zip
