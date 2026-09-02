@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB CODE "src/*.cpp")
 add_library(${PluginName} SHARED ${CODE} main.cpp)
+set_target_properties(${PluginName} PROPERTIES PREFIX "")
 
 find_package(PkgConfig)
 
