@@ -22,7 +22,7 @@
       packages = forAllSystems (pkgs: rec {
         rotate-plugin = pkgs.stdenv.mkDerivation {
           pname = "rotate-plugin";
-          version = self.rev or self.dirtyRev;
+          version = self.shortRev or self.dirtyShortRev;
           src = ./.;
 
           nativeBuildInputs = with pkgs; [
