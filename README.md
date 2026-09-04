@@ -1,4 +1,5 @@
 # rotate-plugin
+[![Build plugin](https://github.com/SuNNjek/rotate-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/SuNNjek/rotate-plugin/actions/workflows/build.yml)
 [![AUR version](https://img.shields.io/aur/version/avisynth-plugin-rotate-git?style=flat-square)](https://aur.archlinux.org/packages/avisynth-plugin-rotate-git/)
 
 Rotation plugin for AviSynth+
