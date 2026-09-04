@@ -21,6 +21,9 @@ https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=ms
 #### Arch
 If you're on Arch, there's an AUR package (check the badge at the top of the README).
 
+#### NixOS
+If you're on NixOS, the repository contains a flake to build the plugin.
+
 #### Other (Compiling from source)
 For other distributions, you will have to compile the plugin from source.
 

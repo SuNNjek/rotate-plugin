@@ -13,3 +13,15 @@ _deps
 # Visual Studio
 .vs
 out
+
+# direnv
+.direnv
+
+# Ninja
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Build output
+rotate.so
+result
