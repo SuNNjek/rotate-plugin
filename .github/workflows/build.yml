@@ -52,8 +52,8 @@ jobs:
 
       - name: Build plugin
         run: |
-          cmake -G Ninja .
-          ninja
+          cmake .
+          cmake --build .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
